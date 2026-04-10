@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康闖關王 計分板</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#F4F3FC;min-height:100vh}
+#sb{min-height:100vh;display:flex;flex-direction:column;padding:12px;gap:10px}
+.hdr{border-radius:16px;padding:18px 12px 14px;text-align:center;background:linear-gradient(135deg,#7F77DD 0%,#1D9E75 100%);color:#fff;position:relative;overflow:hidden}
+.hdr-sparkles{position:absolute;inset:0;pointer-events:none}
+.hdr-sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.6);animation:twinkle 2s infinite}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(0.5)}50%{opacity:1;transform:scale(1)}}
+.hdr-logo{font-size:clamp(10px,1.3vw,13px);opacity:0.8;letter-spacing:3px;margin-bottom:4px}
+.hdr-title{font-size:clamp(24px,4.5vw,48px);font-weight:800;letter-spacing:1px;line-height:1.1}
+.hdr-en{font-size:clamp(10px,1.1vw,13px);opacity:0.7;margin-top:4px;letter-spacing:2px}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px}
+.btn{padding:7px 16px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#333;font-size:13px;cursor:pointer;font-weight:500;transition:background 0.12s,transform 0.08s;font-family:inherit}
+.btn:hover{background:#f0f0f0}
+.btn:active{transform:scale(0.96)}
+.btn-danger{border-color:#E24B4A;color:#E24B4A}
+.btn-danger:hover{background:#FCEBEB}
+.btn-cheer{background:linear-gradient(135deg,#EF9F27,#D4537E);border-color:transparent;color:#fff;font-weight:700;font-size:14px}
+.btn-cheer:hover{opacity:0.88}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(130px,15vw,200px),1fr));gap:10px;flex:1}
+.card{border-radius:16px;padding:clamp(10px,2vh,20px) clamp(8px,1vw,14px) clamp(14px,2vh,24px);text-align:center;position:relative;border:2px solid transparent;transition:transform 0.2s,border-color 0.2s}
+.card.first{border-color:#EF9F27;box-shadow:0 0 0 3px #FAEEDA}
+.crown{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:28px;display:none;animation:crbounce 0.7s ease infinite alternate}
+.card.first .crown{display:block}
+@keyframes crbounce{from{transform:translateX(-50%) translateY(0)}to{transform:translateX(-50%) translateY(-7px)}}
+.c-rank{font-size:12px;font-weight:600;opacity:0.65;margin-bottom:2px}
+.c-name{font-size:clamp(14px,2vw,20px);font-weight:700;margin-bottom:8px;word-break:break-word;line-height:1.2;cursor:pointer}
+.c-name:hover{text-decoration:underline dotted;opacity:0.8}
+.c-score{font-size:clamp(48px,8vw,88px);font-weight:900;line-height:1;margin-bottom:10px}
+.score-btns{display:flex;gap:8px;justify-content:center;align-items:center}
+.sbtn{width:clamp(36px,4.5vw,52px);height:clamp(36px,4.5vw,52px);border-radius:50%;border:none;font-size:clamp(22px,3vw,30px);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.12s,filter 0.12s;font-family:inherit;line-height:1}
+.sbtn:active{transform:scale(0.88)}
+.sbtn-plus{background:#1D9E75;color:#fff}
+.sbtn-plus:hover{filter:brightness(1.1)}
+.sbtn-minus{background:#E24B4A;color:#fff}
+.sbtn-minus:hover{filter:brightness(1.1)}
+.sbtn-del{width:clamp(28px,3vw,38px);height:clamp(28px,3vw,38px);border-radius:50%;border:none;font-size:14px;cursor:pointer;background:transparent;color:#aaa;display:flex;align-items:center;justify-content:center;transition:color 0.1s,background 0.1s;position:absolute;top:8px;right:8px}
+.sbtn-del:hover{color:#E24B4A;background:#FCEBEB}
+.log-section{margin-top:4px}
+.log-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.log-ttl{font-size:13px;font-weight:500;color:#666}
+.log-clear{padding:3px 10px;border-radius:20px;border:1px solid #E24B4A;background:transparent;color:#E24B4A;font-size:12px;cursor:pointer;font-family:inherit}
+.log-clear:hover{background:#FCEBEB}
+.log-list{list-style:none;max-height:160px;overflow-y:auto}
+.log-item{font-size:12px;padding:4px 8px;border-radius:6px;margin-bottom:2px;background:#fff;color:#333;display:flex;justify-content:space-between;border:0.5px solid #eee}
+.log-time{color:#aaa;font-size:11px}
+.log-empty{font-size:12px;color:#aaa;text-align:center;padding:10px 0}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:50}
+.overlay.open{display:flex}
+.dlg{background:#fff;border-radius:16px;padding:20px;width:min(340px,88vw);border:0.5px solid #ddd}
+.dlg h3{font-size:15px;font-weight:500;margin-bottom:12px;color:#222}
+.dlg input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:14px;background:#f7f7f7;color:#222;margin-bottom:8px;font-family:inherit}
+.dlg-inputs{max-height:320px;overflow-y:auto;margin-bottom:8px}
+.dlg-note{font-size:13px;color:#666;margin-bottom:8px}
+.dlg-btns{display:flex;gap:8px;justify-content:flex-end}
+.dlg-btns button{padding:7px 16px;border-radius:20px;border:1.5px solid #ccc;background:#fff;color:#333;font-size:13px;cursor:pointer;font-weight:500;font-family:inherit}
+.dlg-btns .primary{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.confwrap{pointer-events:none;position:fixed;inset:0;overflow:hidden;z-index:200}
+.conf{position:absolute;top:-14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(760deg);opacity:0}}
+.bump{animation:bump 0.25s ease}
+@keyframes bump{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="confwrap" class="confwrap"></div>
+<div class="overlay" id="overlay">
+  <div class="dlg">
+    <h3 id="dlg-title">設定</h3>
+    <div id="dlg-body"></div>
+    <div class="dlg-btns">
+      <button id="dlg-cancel">取消</button>
+      <button class="primary" id="dlg-ok">確認</button>
+    </div>
+  </div>
+</div>
+<div id="sb">
+  <div class="hdr">
+    <div class="hdr-sparkles" id="sparkles"></div>
+    <div class="hdr-logo">鳳凰吉祥健康管理中心</div>
+    <div class="hdr-title">🏆 健康闖關王</div>
+    <div class="hdr-en">Health Challenge King</div>
+  </div>
+  <div class="ctrls">
+    <button class="btn" id="btn-add">＋ 新增隊伍</button>
+    <button class="btn" id="btn-rename">✏️ 編輯隊名</button>
+    <button class="btn btn-danger" id="btn-reset">↺ 重置分數</button>
+    <button class="btn btn-cheer">🎊 歡呼！</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="log-section">
+    <div class="log-hdr">
+      <div class="log-ttl">📋 計分紀錄</div>
+      <button class="log-clear" id="btn-clear-log">清空紀錄</button>
+    </div>
+    <ul class="log-list" id="log-list"></ul>
+  </div>
+</div>
+<script>
+const COLORS=[
+  {bg:'#EEEDFE',score:'#3C3489',name:'#26215C'},
+  {bg:'#E1F5EE',score:'#085041',name:'#04342C'},
+  {bg:'#FAECE7',score:'#712B13',name:'#4A1B0C'},
+  {bg:'#FBEAF0',score:'#72243E',name:'#4B1528'},
+  {bg:'#FAEEDA',score:'#633806',name:'#412402'},
+  {bg:'#E6F1FB',score:'#0C447C',name:'#042C53'},
+  {bg:'#EAF3DE',score:'#27500A',name:'#173404'},
+  {bg:'#FCEBEB',score:'#791F1F',name:'#501313'},
+  {bg:'#F1EFE8',score:'#444441',name:'#2C2C2A'},
+];
+const DEFAULT_NAMES=['元氣隊','福氣隊','平安隊','喜樂隊','長壽隊','豐盛隊','活力隊','健康隊','吉祥隊','逆齡隊'];
+const CONF_COLS=['#7F77DD','#1D9E75','#EF9F27','#D4537E','#E24B4A','#378ADD','#63991F','#BA7517','#AFA9EC','#5DCAA5'];
+let teams=[],logItems=[],dlgOkFn=null,scoring=false,uid=1;
+
+function ts(){const n=new Date();return[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>x.toString().padStart(2,'0')).join(':')}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function addScore(id,delta){
+  if(scoring)return;
+  scoring=true;
+  const t=teams.find(x=>x.id===id);
+  if(!t){scoring=false;return}
+  t.score=Math.max(0,t.score+delta);
+  logItems.unshift({text:esc(t.name)+'　'+(delta>0?'＋'+delta:String(delta))+' 分',time:ts()});
+  if(logItems.length>60)logItems.length=60;
+  if(delta>0)burst(22);
+  render();
+  const el=document.getElementById('score-'+id);
+  if(el){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}
+  setTimeout(()=>{scoring=false},160);
+}
+
+function render(){
+  const sorted=[...teams].sort((a,b)=>b.score-a.score);
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  sorted.forEach((t,rank)=>{
+    const c=COLORS[t.ci%COLORS.length];
+    const isFirst=rank===0&&t.score>0;
+    const card=document.createElement('div');
+    card.className='card'+(isFirst?' first':'');
+    card.style.background=c.bg;
+    card.style.marginTop=isFirst?'22px':'0';
+    const rl=isFirst?'🥇':rank===1&&t.score>0?'🥈':rank===2&&t.score>0?'🥉':'#'+(rank+1);
+    card.innerHTML=
+      '<div class="crown">👑</div>'+
+      '<button class="sbtn-del" data-del="'+t.id+'" title="刪除此隊">✕</button>'+
+      '<div class="c-rank">'+rl+'</div>'+
+      '<div class="c-name" style="color:'+c.name+'" data-rename="'+t.id+'">'+esc(t.name)+'</div>'+
+      '<div class="c-score" id="score-'+t.id+'" style="color:'+c.score+'">'+t.score+'</div>'+
+      '<div class="score-btns">'+
+        '<button class="sbtn sbtn-minus" data-minus="'+t.id+'">−</button>'+
+        '<button class="sbtn sbtn-plus" data-plus="'+t.id+'">＋</button>'+
+      '</div>';
+    grid.appendChild(card);
+  });
+  const logEl=document.getElementById('log-list');
+  logEl.innerHTML=logItems.length
+    ?logItems.map(l=>'<li class="log-item"><span>'+l.text+'</span><span class="log-time">'+l.time+'</span></li>').join('')
+    :'<li class="log-empty">尚無計分紀錄</li>';
+}
+
+document.getElementById('grid').addEventListener('click',e=>{
+  const plus=e.target.closest('[data-plus]');
+  const minus=e.target.closest('[data-minus]');
+  const del=e.target.closest('[data-del]');
+  const rename=e.target.closest('[data-rename]');
+  if(plus){addScore(plus.dataset.plus,1);return}
+  if(minus){addScore(minus.dataset.minus,-1);return}
+  if(del){confirmDelete(del.dataset.del);return}
+  if(rename){openRename(rename.dataset.rename);return}
+});
+
+function mkTeam(name){return{id:'t'+(uid++),name,score:0,ci:teams.length}}
+function init(){teams=DEFAULT_NAMES.slice(0,6).map((n,i)=>({id:'t'+(uid++),name:n,score:0,ci:i}));logItems=[];render()}
+
+function openDlg(title,body,okFn){
+  document.getElementById('dlg-title').textContent=title;
+  document.getElementById('dlg-body').innerHTML=body;
+  document.getElementById('dlg-ok').style.display='';
+  dlgOkFn=okFn;
+  document.getElementById('overlay').classList.add('open');
+  const first=document.querySelector('#dlg-body input');
+  if(first)setTimeout(()=>{first.focus();if(first.select)first.select()},40);
+}
+function closeDlg(){document.getElementById('overlay').classList.remove('open');dlgOkFn=null}
+document.getElementById('dlg-cancel').addEventListener('click',closeDlg);
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeDlg()});
+document.getElementById('dlg-ok').addEventListener('click',()=>{if(dlgOkFn)dlgOkFn()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDlg()});
+
+document.getElementById('btn-add').addEventListener('click',()=>{
+  const def=DEFAULT_NAMES[teams.length]||'新隊伍';
+  openDlg('新增隊伍','<input id="di0" maxlength="8" value="'+esc(def)+'"/>',()=>{
+    const v=document.getElementById('di0').value.trim();
+    if(!v)return;
+    teams.push(mkTeam(v));render();closeDlg();
+  });
+});
+
+document.getElementById('btn-rename').addEventListener('click',()=>{
+  const inputs=teams.map((t,i)=>'<input id="ri'+i+'" maxlength="8" value="'+esc(t.name)+'" placeholder="第'+(i+1)+'隊"/>').join('');
+  openDlg('編輯隊名','<div class="dlg-inputs">'+inputs+'</div>',()=>{
+    teams.forEach((t,i)=>{const el=document.getElementById('ri'+i);if(el&&el.value.trim())t.name=el.value.trim()});
+    render();closeDlg();
+  });
+});
+
+function openRename(id){
+  const t=teams.find(x=>x.id===id);if(!t)return;
+  openDlg('修改隊名','<input id="di0" maxlength="8" value="'+esc(t.name)+'"/>',()=>{
+    const v=document.getElementById('di0').value.trim();if(v)t.name=v;render();closeDlg();
+  });
+}
+
+function confirmDelete(id){
+  const t=teams.find(x=>x.id===id);if(!t)return;
+  if(teams.length<=2){
+    openDlg('無法刪除','<p class="dlg-note">至少需保留 2 支隊伍</p>',closeDlg);
+    document.getElementById('dlg-ok').style.display='none';return;
+  }
+  openDlg('刪除隊伍','<p class="dlg-note">確定要刪除「'+esc(t.name)+'」嗎？此操作無法復原。</p>',()=>{
+    teams=teams.filter(x=>x.id!==id);render();closeDlg();
+  });
+}
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  openDlg('重置確認','<p class="dlg-note">確定要重置所有分數與紀錄嗎？</p>',()=>{
+    teams.forEach(t=>t.score=0);logItems=[];render();closeDlg();
+  });
+});
+
+document.getElementById('btn-clear-log').addEventListener('click',()=>{
+  if(!logItems.length)return;
+  openDlg('清空紀錄','<p class="dlg-note">確定要清空所有計分紀錄嗎？</p>',()=>{logItems=[];render();closeDlg()});
+});
+
+document.querySelector('.btn-cheer').addEventListener('click',()=>{
+  burst(120);setTimeout(()=>burst(80),500);setTimeout(()=>burst(60),1100);
+});
+
+function burst(count){
+  const wrap=document.getElementById('confwrap');
+  for(let i=0;i<count;i++){
+    const d=document.createElement('div');d.className='conf';
+    const sz=7+Math.random()*13;
+    d.style.cssText='left:'+Math.random()*100+'%;width:'+sz+'px;height:'+sz*(0.4+Math.random()*0.8)+'px;background:'+CONF_COLS[Math.floor(Math.random()*CONF_COLS.length)]+';border-radius:'+(Math.random()>0.5?'50%':'2px')+';animation-duration:'+(1.3+Math.random()*1.8)+'s;animation-delay:'+Math.random()*0.5+'s';
+    wrap.appendChild(d);setTimeout(()=>{if(d.parentNode)d.remove()},3500);
+  }
+}
+
+(function buildSparkles(){
+  const wrap=document.getElementById('sparkles');
+  for(let i=0;i<12;i++){
+    const d=document.createElement('div');d.className='hdr-sparkle';
+    d.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;animation-delay:'+Math.random()*2+'s;animation-duration:'+(1.5+Math.random())+'s';
+    wrap.appendChild(d);
+  }
+})();
+
+init();
+</script>
+</body>
+</html>
